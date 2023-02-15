@@ -1004,7 +1004,7 @@
             }
             else {
                 var paths = 'apps,apps/${appId},apps/${appId}/groups,apps/${appId}/users,apps?filter=user.id eq "${userId}",authorizationServers,eventHooks,features,' + 
-                    'groups,groups/${groupId},groups/${groupId}/roles,groups/${groupId}/users,groups/rules,idps,inlineHooks,logs,mappings,policies?type=${type},' + 
+                    'groups,groups/${groupId},groups/${groupId}/roles,groups/${groupId}/users,groups/rules,idps,inlineHooks,logs,mappings,policies/${policyId},policies?type=${type},' + 
                     'meta/schemas/apps/${instanceId}/default,meta/schemas/user/default,meta/schemas/user/linkedObjects,meta/types/user,sessions/me,templates/sms,trustedOrigins,' + 
                     'users,users/me,users/${userId},users/${userId}/appLinks,users/${userId}/factors,users/${userId}/groups,users/${userId}/roles,zones';
             }
@@ -1023,6 +1023,11 @@
                     var parts = location.pathname.split('/');
                     var id = location.pathname.match("/group/") ? parts[3] : parts[5];
                     url = url.replace(/\${[^}]+}/g, id);
+                }
+                else if (url.match(/\${.*}/) && location.pathname.match("/authentication-policies")) {
+                    var parts = window.location.hash.split('/');
+                    var policyId = parts[2];
+                    url = url.replace(/\${[^}]+}/g, policyId);
                 }
                 requestJSON({url, method: method.value, data: data.value}).then((objects, status, jqXHR) => {
                     $(results).html("<br>");
