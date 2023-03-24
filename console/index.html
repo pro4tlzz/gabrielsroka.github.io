@@ -25,12 +25,12 @@ pre {
 </head>
 <body>
 <h1>console</h1>
-<p>This tool will allow you to run short JS snippets using a library (see Functions below and 
+<p>This tool will allow you to run short JavaScript snippets using a library (see Functions below and 
     <a href=https://github.com/gabrielsroka/gabrielsroka.github.io/blob/master/console/index.html>source</a> for more info).</p>
 <b>Setup</b>
 <ol>
 <li>Show your bookmarks toolbar. In Chrome, … > Bookmarks > Show Bookmarks Bar. In Firefox, right-click in the title bar and click Bookmarks Toolbar.
-<li>Drag/drop this <a id=bm>console v4</a> to the bookmarks toolbar.
+<li>Drag/drop this <a id=bm>console v6</a> to the bookmarks toolbar.
 </ol>
 <br>
 <b>Usage</b>
@@ -45,24 +45,29 @@ pre {
   const div = document.body.appendChild(document.createElement('div'));
   div.innerHTML = `<button id=run title='Ctrl+Enter'>Run</button>
    <button id=cancelBtn title=Esc>Cancel</button>
-   <button onclick=document.body.removeChild(this.parentNode)>Close</button>
+   <button id=closeBtn>Close</button>
    <label><input id=preserveLog type=checkbox> Preserve Log</label>
-   <a href=https://gabrielsroka.github.io/console target=_blank>src v4</a><br>
+   <a href=https://gabrielsroka.github.io/console target=_blank>src v6</a><br>
    <textarea id=editor style='width: 100%; height: 300px; font-family: monospace;' spellcheck=false autocapitalize=none>
 f = 'filter=profile.lastName eq "Doe"'\n
 url = '/api/v1/users?' + f\n
 for await (user of getObjects(url)) {\n
   log(user.id, user.profile.login)\n
+  if (cancel) break\n
 }</textarea><br>
    <textarea id=debug style='width: 100%; height: 300px; font-family: monospace;' spellcheck=false autocapitalize=none></textarea>
    <div id=results></div>`;
   div.style.cssText = 'position: absolute; padding: 8px; width: 100%; top: 0px; background-color: white; z-index: 1001;';
   run.onclick = function () {
-    if (!preserveLog.checked) debug.value = '';
+    if (!preserveLog.checked) {
+      debug.value = '';
+      results.innerHTML = '';
+    }
     cancel = false;
     eval('(async function () {' + editor.value + '\n})()');
   };
   cancelBtn.onclick = () => cancel = true;
+  closeBtn.onclick = () => document.body.removeChild(div);
   editor.onkeydown = function (event) {
     const ENTER = 13, ESC = 27;
     if (event.ctrlKey && event.keyCode == ENTER) {
@@ -74,6 +79,13 @@ for await (user of getObjects(url)) {\n
   function log(...s) {
     debug.value += s.join(' ') + '\n';
     debug.scrollTo(0, debug.scrollHeight);
+  }
+  function table(rows) {
+    if (rows.length == 0) return;
+    const pre = (p, ds) => ds.map(d => p + d).join('');
+    const hdr = '<tr>' + pre('<th>', Object.keys(rows[0]));
+    rows = pre('<tr>', rows.map(row => pre('<td>', Object.values(row))));
+    results.innerHTML += '<table class="data-list-table">' + hdr + rows + '</table>';
   }
   const headers = {
     'Accept': 'application/json',
@@ -95,29 +107,45 @@ for await (user of getObjects(url)) {\n
       }
     }
   }
+  async function* getIamObjects(url, key) {
+    while (url) {
+      const page = await getJson(url);
+      for (const o of page[key]) {
+        yield o;
+      }
+      url = page._links?.next?.href.match('https://[^/]+(.+)')[1];
+    }
+  }
   async function get(url) {
-    return fetchLimit(url, {method: 'get', headers});
+    return fetchLimit(url, {method: 'GET', headers});
   }
   async function getJson(url) {
     const r = await get(url);
     return r.json();
   }
   async function post(url, body) {
-    return fetchLimit(url, {method: 'post', headers, body: JSON.stringify(body)});
+    return fetchLimit(url, {method: 'POST', headers, body: JSON.stringify(body)});
   }
   async function postJson(url, body) {
     const r = await post(url, body);
     return r.json();
   }
   async function put(url, body) {
-    return fetchLimit(url, {method: 'put', headers, body: JSON.stringify(body)});
+    return fetchLimit(url, {method: 'PUT', headers, body: JSON.stringify(body)});
   }
   async function putJson(url, body) {
     const r = await put(url, body);
     return r.json();
   }
+  async function patch(url, body) {
+    return fetchLimit(url, {method: 'PATCH', headers, body: JSON.stringify(body)});
+  }
+  async function patchJson(url, body) {
+    const r = await patch(url, body);
+    return r.json();
+  }
   async function remove(url) {
-    return fetchLimit(url, {method: 'delete', headers});
+    return fetchLimit(url, {method: 'DELETE', headers});
   }
   async function fetchLimit(url, init) {
     const TOO_MANY_REQUESTS = 429;
@@ -127,7 +155,7 @@ for await (user of getObjects(url)) {\n
       const limit = r.headers.get('X-Rate-Limit-Limit');
       if (limit == 0) {
         await sleep(1000);
-      } else if (r.status == TOO_MANY_REQUESTS || remaining <= 5) {
+      } else if (r.status == TOO_MANY_REQUESTS || (remaining != null && remaining <= 5)) {
         const reset = r.headers.get('X-Rate-Limit-Reset') * 1000;
         const now = new Date(r.headers.get('date')).getTime();
         const delay = Math.max(reset - now, 1000);
@@ -162,14 +190,18 @@ bm.href = 'javascript:' + code.innerText + '();';
 <b>Functions</b>
 <ul>
 <li>log()
-<li>await getPages() - for await (objects of getPages(url))
-<li>await getObjects() - for await (object of getObjects(url))
+<li>table()
+<li>for await (objects of getPages(url))
+<li>for await (object of getObjects(url)) - pagination for everything except the Roles API
+<li>for await (object of getIamObjects(url, key)) - for the <a href=https://developer.okta.com/docs/reference/api/roles>Roles API</a>
 <li>await get()
 <li>await getJson()
 <li>await post()
 <li>await postJson()
 <li>await put()
 <li>await putJson()
+<li>await patch()
+<li>await patchJson()
 <li>await remove() - not delete()
 <li>await fetchLimit()
 <li>await sleep() - delay in ms
@@ -244,16 +276,19 @@ if (typeof groups == 'undefined') {
 found = groups
   .filter(g => g.profile.name.match(regex)) 
   .sort((g1, g2) => g1.profile.name.localeCompare(g2.profile.name))
-  .map(g => '&lt;tr>&lt;td>' + link('/admin/group/' + g.id, g.profile.name) + '&lt;td>' + g.profile.description)
-  .join('')
-results.innerHTML = found ? '&lt;table>&lt;tr>&lt;th>Name&lt;th>Description' + found + '&lt;/table>': 'not found'
+  .map(g => ({
+    Name: link('/admin/group/' + g.id, g.profile.name),
+    Description: g.profile.description || ''
+  }))
+results.innerHTML = found.length + ' found'
+table(found)
 </pre>
 <br>
 <pre id=searchUsers>
 // Search users with regex using https://gabrielsroka.github.io/console
 
 // Set these:
-regex = /@gsroka.local/i   // // You can use JavaScript regular expressions. The 'i' at the end means case-Insensitive.
+regex = /@gsroka.local/i   // You can use JavaScript regular expressions. The 'i' at the end means case-Insensitive.
 url = '/api/v1/users?filter=status eq "ACTIVE"'
 
 if (typeof users == 'undefined') {
@@ -264,10 +299,13 @@ if (typeof users == 'undefined') {
 found = users
   .filter(u => u.profile.email.match(regex)) 
   .sort((u1, u2) => u1.profile.firstName.localeCompare(u2.profile.firstName))
-  .map(u => '&lt;tr>&lt;td>' + link('/admin/user/profile/view/' + u.id, u.profile.firstName + ' ' + u.profile.lastName) + 
-    '&lt;td>' + u.profile.login + '&lt;td>' + u.profile.email)
-  .join('')
-results.innerHTML = found ? '&lt;table>&lt;tr>&lt;th>Name&lt;th>Username&lt;th>Email' + found + '&lt;/table>' : 'not found'
+  .map(u => ({
+    Name: link('/admin/user/profile/view/' + u.id, u.profile.firstName + ' ' + u.profile.lastName),
+    Username: u.profile.login,
+    Email: u.profile.email
+  }))
+results.innerHTML = found.length + ' found'
+table(found)
 </pre>
 <br>
 <pre id=evalGroupRule>
