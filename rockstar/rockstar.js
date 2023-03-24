@@ -959,11 +959,17 @@
     function loadAllIGARequestsResouceLists() {
 
         path = location.pathname;
-        if (path.match("next/request-types/drafts")) {
+        if (path.match("next/request-types/")) {
             var selector = '[data-qa-id="workflow-grid-load-more-button"]';
-        } else if (path.match("next/settings/configuration/cmdb/OKTA")) {
+        } else if (path.match("next/settings/resources/applications")) {
+            selector = '[data-qa-id="resource-manage-load-more"]';
+        } else if (path.match("next/settings/resources/okta-groups")) {
+            selector = '[data-qa-id="resource-manage-load-more"]';
+        } else if (path.match("next/settings/configuration-lists")) {
             selector = '[data-qa-id="ci-manage-load-more"]';
-        } 
+        } else if (path.match("next/settings/configuration/segments")) {
+            selector = '[data-qa-id="segment-load-more-button"]';
+        }
 
         createDiv('<button id="igaLoadAll" type="button">Load all!</button><br><div class=results></div>', mainPopup, function (){});
         igaLoadAll.onclick = async () => {
@@ -973,8 +979,7 @@
                     loadMoreBtn.click();
                    await sleep();
                 } else {
-                    console.log('done');
-                    igaLoadAll.remove();
+                    console.log('done or found none');
                     break;
                 }
             }
