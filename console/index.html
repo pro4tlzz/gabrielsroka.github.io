@@ -30,7 +30,7 @@ pre {
 <b>Setup</b>
 <ol>
 <li>Show your bookmarks toolbar. In Chrome, … > Bookmarks > Show Bookmarks Bar. In Firefox, right-click in the title bar and click Bookmarks Toolbar.
-<li>Drag/drop this <a id=bm>console v6</a> to the bookmarks toolbar.
+<li>Drag/drop this <a id=bm>console v8</a> to the bookmarks toolbar.
 </ol>
 <br>
 <b>Usage</b>
@@ -43,12 +43,15 @@ pre {
 (function () {
   var cancel = false;
   const div = document.body.appendChild(document.createElement('div'));
-  div.innerHTML = `<button id=run title='Ctrl+Enter'>Run</button>
-   <button id=cancelBtn title=Esc>Cancel</button>
-   <button id=closeBtn>Close</button>
+  const style = `style='display: inline-block;'`;
+  div.innerHTML = `<button id=run title='Ctrl+Enter' ${style}>Run</button>
+   <button id=cancelBtn title=Esc ${style}>Cancel</button>
+   <button id=closeBtn ${style}>Close</button>
    <label><input id=preserveLog type=checkbox> Preserve Log</label>
-   <a href=https://gabrielsroka.github.io/console target=_blank>src v6</a><br>
+   <a href=https://gabrielsroka.github.io/console target=_blank>src v8</a><br>
    <textarea id=editor style='width: 100%; height: 300px; font-family: monospace;' spellcheck=false autocapitalize=none>
+// List users using https://gabrielsroka.github.io/console\n
+\n
 f = 'filter=profile.lastName eq "Doe"'\n
 url = '/api/v1/users?' + f\n
 for await (user of getObjects(url)) {\n
@@ -81,17 +84,23 @@ for await (user of getObjects(url)) {\n
     debug.scrollTo(0, debug.scrollHeight);
   }
   function table(rows) {
+    if (!Array.isArray(rows)) {
+      rows = Object.entries(rows).map(([name, value]) => ({name, value}));
+    }
     if (rows.length == 0) return;
     const pre = (p, ds) => ds.map(d => p + d).join('');
     const hdr = '<tr>' + pre('<th>', Object.keys(rows[0]));
     rows = pre('<tr>', rows.map(row => pre('<td>', Object.values(row))));
-    results.innerHTML += '<table class="data-list-table">' + hdr + rows + '</table>';
+    const html = '<table class="data-list-table">' + hdr + rows + '</table>';
+    results.innerHTML += html;
+    return html;
   }
   const headers = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'X-Okta-XsrfToken': document.querySelector('#_xsrfToken')?.innerText
+    'Content-Type': 'application/json'
   };
+  const xsrf = document.querySelector('#_xsrfToken')?.innerText;
+  if (xsrf) headers['X-Okta-XsrfToken'] = xsrf;
   async function* getPages(url, params = '') {
     while (url) {
       const r = await get(url + params);
@@ -181,6 +190,12 @@ for await (user of getObjects(url)) {\n
     a.click();
     document.body.removeChild(a);
   }
+  function csv(rows) {
+    if (rows.length == 0) return;
+    const hdr = Object.keys(rows[0]).join(',') + '\n';
+    rows = rows.map(row => toCSV(...Object.values(row))).join('\n');
+    return hdr + rows;
+  }
 })
 </script>
 <script>
@@ -208,13 +223,14 @@ bm.href = 'javascript:' + code.innerText + '();';
 <li>link()
 <li>toCSV()
 <li>downloadCSV()
+<li>csv()
 </ul>
 <br>
 <div><b>Examples</b>
 <ul>
 <li><a href=#sendActivationEmail>Send activation email to pending users</a>
-<li><a href=#copyUsers>Copy users from one group to another</a>
-<li><a href=#removeUsers>Remove users from a group</a>
+<li><a href=#copyGroupMembers>Copy members from one group to another</a>
+<li><a href=#removeGroupMembers>Remove group members</a>
 <li><a href=#searchGroups>Search groups with regex</a>
 <li><a href=#searchUsers>Search users with regex</a>
 <li><a href=#evalGroupRule>Eval group rule expression</a>
@@ -236,8 +252,8 @@ for await (user of getObjects(url)) {
 }
 </pre>
 <br>
-<pre id=copyUsers>
-// Copy users from one group to another using https://gabrielsroka.github.io/console
+<pre id=copyGroupMembers>
+// Copy members from one group to another using https://gabrielsroka.github.io/console
 
 // Set these:
 srcGroupId = '00g...'
@@ -245,20 +261,20 @@ dstGroupId = '00g...'
 
 url = '/api/v1/groups/' + srcGroupId + '/users'
 for await (user of getObjects(url)) {
-  log('adding user', user.id)
+  log('adding member', user.id)
   await put('/api/v1/groups/' + dstGroupId + '/users/' + user.id)
 }
 </pre>
 <br>
-<pre id=removeUsers>
-// Remove users from a group using https://gabrielsroka.github.io/console
+<pre id=removeGroupMembers>
+// Remove group members using https://gabrielsroka.github.io/console
 
 // Get groupId from browser's address bar.
 groupId = location.pathname.split('/').pop()
 url = '/api/v1/groups/' + groupId + '/users/'
 for await (user of getObjects(url)) {
   await remove(url + user.id)
-  log(user.profile.login)
+  log('removing group member', user.profile.login)
 }
 </pre>
 <br>
@@ -362,7 +378,7 @@ body = {
 rule = await postJson('/api/v1/groups/rules', body)
 if (rule.id) {
   await post(`/api/v1/groups/rules/${rule.id}/lifecycle/activate`)
-  log('created ' + name)
+  log('created', name)
 } else {
   log(rule.errorSummary + '\n' + rule.errorCauses.map(c => c.errorSummary).join('\n'))
 }
@@ -415,9 +431,8 @@ async function getFactors(user) {
 <pre id=listDevices>
 // List unmanaged devices and user info using https://gabrielsroka.github.io/console
 
-url = '/api/v1/devices?search=managementStatus eq "UNMAN"'
-params = '&expand=user' // due to a bug in the API, this must be added each time.
-for await (device of getObjects(url, params)) {
+url = '/api/v1/devices?search=managementStatus eq "UNMAN"&expand=user'
+for await (device of getObjects(url)) {
   for (user of device._embedded.users) {
     log(device.id, user.managementStatus) // add more attrs...
   }
