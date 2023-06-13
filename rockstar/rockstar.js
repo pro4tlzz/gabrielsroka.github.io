@@ -586,6 +586,7 @@
         function exportUsers(o, url, filter) {
             exportPopup = createPopup("Export " + o);
             exportPopup.append("<br>Columns to export");
+            var errorBox = $('<div style="background-color: #ffb;"></div>').appendTo(exportPopup);
             var checkboxDiv = $("<div style='overflow-y: scroll; height: 152px; width: 500px; border: 1px solid #ccc;'></div>").appendTo(exportPopup);
             function addCheckbox(value, text) {
                 const checked = exportColumns.includes(value) ? "checked" : "";
@@ -648,8 +649,8 @@
                     managerId: "Manager Id",
                     manager: "Manager"
                 };
-                // TODO: since user can't see /schemas, let them know they can only use base attrs.
                 for (const p in profile) addCheckbox("profile." + p, profile[p]);
+                errorBox.html('Unable to fetch custom attributes. Use an account with more privileges.<br>Only base attributes shown below.');
             });
             exportPopup.append('<label><input type=checkbox value="selectAll" id="selectAll"</label>Toggle All');
             $("#selectAll").click(function () {
@@ -713,9 +714,9 @@
                 var object = objects[i];
                 var line = template(object);
                 if (line.then) {
-                    line.then(ln => lines.push(ln));
+                    line.then(ln => lines.push(ln + "\n"));
                 } else {
-                    lines.push(line);
+                    lines.push(line + "\n");
                     totalBytes += line.length + 1;
                 }
             }
@@ -1323,8 +1324,9 @@
     }
     function downloadCSV(popup, html, header, lines, filename) {
         popup.html(html + "Done.");
+        lines.unshift(header + "\n");
         var a = $("<a>").appendTo(popup);
-        a.attr("href", URL.createObjectURL(new Blob([header + "\n" + lines.join("\n")], {type: 'text/csv'})));
+        a.attr("href", URL.createObjectURL(new Blob(lines, {type: 'text/csv'})));
         var date = (new Date()).toISOString().replace(/T/, " ").replace(/:/g, "-").slice(0, 19);
         a.attr("download", `${filename} ${date}.csv`);
         a[0].click();
