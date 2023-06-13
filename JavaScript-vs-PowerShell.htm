@@ -1,6 +1,15 @@
 <html>
 <head>
+<meta name="viewport" content="initial-scale=1.0, minimum-scale=0.25">
 <title>JavaScript vs. PowerShell vs. Python</title>
+<style>
+@media (prefers-color-scheme: dark) {
+    *, a {
+        background-color: #121212;
+        color: #ddd;
+    }
+}
+</style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/powershell.min.js"></script>
@@ -40,8 +49,8 @@ PowerShell is not case-sensitive.
 <td>
 <pre><code class=python>
 # This is a single line comment.
-""" This is a 
-comment block.
+"""This is a 
+docstring, not a comment.
 
 Python is case-sensitive.
 """
@@ -58,7 +67,7 @@ let b = 3;
     
 stringDouble = "double quotes";
 stringSingle = 'single quotes';
-template = `a = ${a}`; // ES6 [?]
+template = `a = ${a}`;
 
 escaped = "\"";
 </code></pre>
@@ -86,16 +95,16 @@ b = 3
 
 string_double = "double quotes"
 string_single = 'single quotes'
-template = f'a = {a}'
+f_string = f'a = {a}'
 
 
 </code></pre>
 </td>
-    
 
 <tr>
 <td>
 <pre><code class="javascript">
+// an array
 arr = [1, 2];
 arr = [];
 arr.push(3);
@@ -107,6 +116,7 @@ arr.length;
 </td>
 <td>
 <pre><code class="powershell">
+# an array
 $arr = 1, 2
 $arr = @()
 $arr += 3
@@ -118,24 +128,26 @@ $arr.length # or $arr.count
 </td>
 <td>
 <pre><code class=python>
-arr = [1, 2]
-arr = []
-arr.append(3)
-b = arr[0]
+# a list
+lst = [1, 2]
+lst = []
+lst.append(3)
+b = lst[0]
 
-arr[0:3] # end is not included
-len(arr)
+lst[0:3] # end is not included
+len(lst)
 </code></pre>
 </td>
     
 <tr>
 <td>
 <pre><code class="javascript">
-hash = {name1: "value", n2: 2};
-hash = {};
-hash.n3 = 3;
+// an object
+obj = {name1: "value", n2: 2};
+obj = {};
+obj.n3 = 3;
 
-longhash = {
+longObj = {
     name1: "value",
     n2: 2
 };
@@ -144,6 +156,7 @@ user = {firstName: 'Gabriel', lastName: 'Sroka'};
 </td>
 <td>
 <pre><code class="powershell">
+# a hashtable
 $hash = @{name1 = "value"; n2 = 2}
 $hash = @{}
 $hash.n3 = 3
@@ -157,9 +170,10 @@ $user = @{firstName = 'Gabriel'; lastName = 'Sroka'}
 </td>
 <td>
 <pre><code class=python>
-a_dict = {'name1': 'value', 'n2': 2}
-a_dict = {}
-a_dict['n3'] = 3
+# a dictionary
+dct = {'name1': 'value', 'n2': 2}
+dct = {}
+dct['n3'] = 3
 
 long_dict = {
     'name1': 'value',
@@ -176,7 +190,6 @@ user = {'first_name': 'Gabriel', 'last_name': 'Sroka'}
 function add(a1, a2) {
     return a1 + a2;
 }
-
  
 v = add(a1, a2);
 </code></pre>
@@ -185,8 +198,7 @@ v = add(a1, a2);
 <pre><code class="powershell">
 # function name is Verb-Noun. Must be declared before it's called.
 function Add-Numbers($a1, $a2) {
-    $a1 + $a2
-    # return is optional.
+    $a1 + $a2 # return is optional.
 }
  
 $v = Add-Numbers $a1 $a2
@@ -199,7 +211,6 @@ def add(a1, a2):
     return a1 + a2
 
 
-
 v = add(a1, a2)
 </code></pre>
 </td>
@@ -208,25 +219,8 @@ v = add(a1, a2)
 <td>
 <pre><code class="javascript">
 if (a == b) /* ... */ // Braces are optional but recommended.
-if (a < b)
-</code></pre>
-</td>
-<td>
-<pre><code class="powershell">
-if ($a -eq $b) { <# ... #> } # Braces are required.
-if ($a -lt $b) { <# ... #> }
-</code></pre>
-</td>
-<td>
-<pre><code class=python>
-if a == b: # ...
-if a < b: # ...
-</code></pre>
-</td>
-    
-<tr>
-<td>
-<pre><code class="javascript">
+if (a < b) // ...
+
 b = true;
  
 if (a == b) {
@@ -238,13 +232,18 @@ if (a == b) {
 }
  
 while (b) { }
-do { } while ( );
-for (i = 0; i < MAX; i++) { }
-for (item of collection) // ES6 [?]
+do { } while (b); // note the trailing semicolon
+for (var i = 0; i < MAX; i++) { }
+for (const item of items) {
+    console.log(item);
+}
 </code></pre>
 </td>
 <td>
 <pre><code class="powershell">
+if ($a -eq $b) { <# ... #> } # Braces are required.
+if ($a -lt $b) { <# ... #> }
+
 $b = $true
  
 if ($a -eq $b) {
@@ -255,14 +254,19 @@ if ($a -eq $b) {
     #
 }
 
-while (b) { }
-do { } while (b)
+while ($b) { }
+do { } while ($b)
 for ($i = 0; $i -lt $MAX; $i++) { }
-foreach ($item in $collection)
+foreach ($item in $items) {
+    Write-Host $item
+}
 </code></pre>
 </td>
 <td>
 <pre><code class=python>
+if a == b: # ...
+if a < b: # ...
+
 b = True
 
 if a == b:
@@ -276,29 +280,12 @@ else:
 while b: #
 # no do/while loop, use while/break
 for i in range(MAX): # ...
-for item in collection: # ...
-</code></pre>
-</td>
-    
-
-
-<tr>
-<td>
-<pre><code class="javascript">
+for item in items:
+    print(item)
 
 </code></pre>
 </td>
-<td>
-<pre><code class="powershell">
-
-</code></pre>
-</td>
-<td>
-<pre><code class=python>
-
-</code></pre>
-</td>
-    
+   
 </table>
 </body>
 </html>

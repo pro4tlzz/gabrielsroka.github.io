@@ -18,7 +18,7 @@
 </style>
 </head>
 <body>
-<h1>BASIC</h1>
+<h1><a href=https://github.com/gabrielsroka/gabrielsroka.github.io/blob/master/webpages/BASIC.html target=_blank>BASIC</a></h1>
 <button id=run accesskey="R" title="Run (Ctrl + Enter or F2)">Run</button>
 <button id=newProgram accesskey="N" title="New">New</button>
 <select id=prognames></select>
@@ -35,11 +35,12 @@ var progname;
 
 if (localStorage.basicPrograms) {
     programs = JSON.parse(localStorage.basicPrograms);
-    for (var [progname, value] of Object.entries(programs)) {
-        if (value) addOption(progname, value);
+    const sorted = Object.entries(programs).sort();
+    for (const [name, value] of sorted) {
+        if (value) addOption(name, value);
     }
-    editor.value = Object.values(programs)[0];
-    progname = Object.keys(programs)[0];
+    progname = sorted[0][0];
+    editor.value = sorted[0][1];
 } else {
     programs = {};
     editor.value = `rem basic is awesome !!!
@@ -75,7 +76,7 @@ run.onclick = function () {
             v = tLine[4];
             line = line
                 .replace("for", "for (var")
-                .replace(" to", "; " + v + " <=");
+                .replace(" to", "; " + v + (line.match('step -') ? ' >=' : " <="));
             if (line.match('step')) {
                 line = line.replace('step', '; ' + v + ' +=') + ') {';
             } else {
@@ -93,8 +94,12 @@ run.onclick = function () {
             line = line.replace("else", "} else {");
         } else if (tLine.startsWith("end if")) {
             line = line.replace('end if', '}');
-        } else if (tLine.startsWith("print ")) {
-            line = line.replace("print ", "print(") + ")";
+        } else if (tLine.startsWith("print ") || tLine.startsWith('?')) {
+            if (tLine.endsWith(';')) {
+                line = line.replace(/(print|\?) ?/, "print(").replace(';', '') + ")";
+            } else {
+                line = line.replace(/(print|\?) ?/, "println(") + ")";
+            }
         } else if (tLine.startsWith('then ')) { // .then for Promises.
             line = line.replace('then ', '.then(') + ' => {';
         } else if (tLine.startsWith('end then')) {
@@ -134,8 +139,8 @@ editor.onkeydown = function (event) {
     }
 };
 
-debug.log = debug.print = function (s) {
-    debug.value += (s ? s.toString() : s) + "\r\n";
+debug.log = debug.print = function (s, nl = true) {
+    debug.value += (s ? s.toString() : s) + (nl ? "\r\n" : '');
     debug.scrollTo(0, debug.scrollHeight);
 };
     
@@ -145,6 +150,10 @@ debug.clear = function () {
 };
 
 function print(...args) {
+    debug.print(args.join(" "), false);
+}
+
+function println(...args) {
     debug.print(args.join(" "));
 }
 
@@ -164,6 +173,15 @@ function addOption(name, value) {
     option.text = name;
     option.value = value;
     prognames.add(option);
+}
+
+// standard library
+function len(s$) {
+    return s$.length;
+}
+
+function mid$(s$, i, ln) {
+    return s$.slice(i - 1, i + ln - 1);
 }
 </script>
 </body>
