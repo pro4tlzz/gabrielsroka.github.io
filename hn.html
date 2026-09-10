@@ -125,7 +125,7 @@ async function getItems() {
             var web = ' | ' + link(`https://www.google.com/search?q=${encodeURIComponent(item.title)}+site:${site}`, 'web');
             if (site.includes('twitter.com')) {
                 var lsite = site + '/' + url.pathname.split('/')[1];
-                web += ' | ' + link(item.url.replace('twitter.com', 'nitter.net'), 'nitter');
+                web += ' | ' + link(item.url.replace('twitter.com', 'xcancel.com'), 'xcancel');
             } else {
                 lsite = site;
             }
